@@ -1,0 +1,51 @@
+---
+title: "translation-survey-analysis"
+output: html_document
+---
+# import packages
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(ggplot2)
+library(ggthemes)
+
+```
+
+# import all survey data
+
+```{r}
+path_trial = paste(getwd(), "/survey_data/", sep = "")
+survey_data <- list.files(path =path_trial, pattern = "*.csv", full.names = TRUE) %>% 
+  lapply(read_csv,  col_types = cols( .default = col_character())) %>% 
+  bind_rows %>%
+  filter(trial_type == "survey-likert")
+```
+
+# descriptives
+
+```{r}
+# unique subjects
+survey_data %>% group_by(run_id) %>%
+  count()
+```
+
+# obtaining ratings
+
+```{r}
+survey_data = survey_data %>%
+  separate(response, into = c("Q", "rating"), sep = ":") %>%
+  separate(rating, into =c("rating", "bracket"), sep = "}") %>%
+  filter(rating != "\"\"") %>%
+  mutate(rating = as.numeric(rating))
+
+# get mean rating per participant
+
+mean_rating = survey_data %>% group_by(run_id) %>%
+  summarise(mean_rating = mean(rating))
+
+# mean ratings are significantly different from perfect score (5)
+t.test(mean_rating$mean_rating, mu = 5)
+
+```
+
